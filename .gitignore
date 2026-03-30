@@ -7,9 +7,11 @@
 *.dll
 *.so
 *.dylib
+chirpy
 
 # Test binary, built with `go test -c`
 *.test
+/tmp
 
 # Code coverage profiles and other test artifacts
 *.out

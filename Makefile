@@ -1,6 +1,6 @@
 main_package_path = .
 binary_name = chirpy
-bin_dir = /tmp/bin
+bin_dir = .
 
 db_url = postgres://postgres:superpswd@localhost:5433/chirpy?sslmode=disable
 migration_dir = sql/schema
