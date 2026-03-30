@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: chirpy-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: superpswd
+      POSTGRES_DB: chirpy
+    ports:
+      - "5433:5432"
+    volumes:
+      - chirpy_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  chirpy_postgres_data:
