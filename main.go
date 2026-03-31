@@ -14,7 +14,8 @@ func main() {
 		Handler: muxServer,
 		Addr:    ":" + port,
 	}
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatal(err)
 
 }
 
