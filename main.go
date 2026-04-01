@@ -13,13 +13,13 @@ func main() {
 	const filePathRoot = "."
 	const port = "8080"
 	apiConfig := config.ApiConfig{
-		fileserverHits: atomic.Int32{},
+		FileserverHits: atomic.Int32{},
 	}
 	muxServer := http.NewServeMux()
-	muxServer.Handle("/app/", ApiConfig.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(filePathRoot)))))
+	muxServer.Handle("/app/", apiConfig.MiddlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(filePathRoot)))))
 	muxServer.HandleFunc("GET /healthz", handlers.HandlerHealth)
-	muxServer.HandleFunc("GET /metrics", ApiConfig.HandlerMetrics)
-	muxServer.HandleFunc("POST /reset", ApiConfig.HandlerReset)
+	muxServer.HandleFunc("GET /metrics", apiConfig.HandlerMetrics)
+	muxServer.HandleFunc("POST /reset", apiConfig.HandlerReset)
 
 	server := &http.Server{
 		Handler: muxServer,
