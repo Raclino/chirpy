@@ -69,8 +69,13 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload any) {
+	resp, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-
-	_ = json.NewEncoder(w).Encode(payload)
+	w.Write(resp)
 }
