@@ -1,4 +1,4 @@
-package config
+package handlers
 
 import "sync/atomic"
 
