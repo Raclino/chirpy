@@ -2,56 +2,75 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strings"
 )
 
 type ValidateChirpReq struct {
 	Body string `json:"body"`
 }
 
-type ChirpValidRsp struct {
-	Valid bool `json:"valid"`
+type ChirpCleanedRsp struct {
+	CleanedBody string `json:"cleaned_body"`
 }
 
 type ChirpErrorRsp struct {
 	Error string `json:"error"`
 }
 
-func HandlerValidateChirp(w http.ResponseWriter, r *http.Request) {
-	req := ValidateChirpReq{}
-	defer r.Body.Close()
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+var forbiddenWords = map[string]struct{}{
+	"kerfuffle": {},
+	"sharbert":  {},
+	"fornax":    {},
+}
 
+func HandlerValidateChirp(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var req ValidateChirpReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
+
 	if len(req.Body) > 140 {
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
-	} else {
-		respondWithJSON(w, http.StatusOK)
+		return
 	}
+
+	cleanedBody := cleanChirp(req.Body)
+	respondWithJSON(w, http.StatusOK, ChirpCleanedRsp{
+		CleanedBody: cleanedBody,
+	})
+}
+
+func cleanChirp(body string) string {
+	words := strings.Split(body, " ")
+
+	for i, word := range words {
+		lowerWord := strings.ToLower(word)
+		if _, found := forbiddenWords[lowerWord]; found {
+			words[i] = "****"
+		}
+	}
+
+	return strings.Join(words, " ")
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
+
 	errResp := ChirpErrorRsp{
 		Error: msg,
 	}
-	resp, err := json.Marshal(errResp)
-	if err != nil {
-		fmt.Println("Couldn't marshal the msg")
-	}
-	w.Write(resp)
+
+	_ = json.NewEncoder(w).Encode(errResp)
 }
 
-func respondWithJSON(w http.ResponseWriter, code int) {
+func respondWithJSON(w http.ResponseWriter, code int, payload any) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	valid := ChirpValidRsp{
-		Valid: true,
-	}
-	resp, err := json.Marshal(valid)
-	if err != nil {
-		fmt.Println("Couldn't marshal the msg")
-	}
-	w.Write(resp)
+
+	_ = json.NewEncoder(w).Encode(payload)
 }
