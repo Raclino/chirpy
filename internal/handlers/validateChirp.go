@@ -74,6 +74,7 @@ func respondWithJSON(w http.ResponseWriter, code int, payload any) {
 		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		return
 	}
+	resp = append(resp, '\n')
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
