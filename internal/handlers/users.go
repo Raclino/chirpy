@@ -21,7 +21,7 @@ type User struct {
 	Email     string    `json:"email"`
 }
 
-func (cfg *ApiConfig) HandlerUsers(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req CreateUserReq

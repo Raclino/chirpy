@@ -38,7 +38,28 @@ var forbiddenWords = map[string]struct{}{
 	"fornax":    {},
 }
 
-func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandlerGetChirps(w http.ResponseWriter, r *http.Request) {
+	dbChirps, err := cfg.Db.GetChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't get chirps")
+		return
+	}
+
+	chirps := make([]Chirp, 0, len(dbChirps))
+	for _, dbChirp := range dbChirps {
+		chirps = append(chirps, Chirp{
+			ID:        dbChirp.ID,
+			CreatedAt: dbChirp.CreatedAt,
+			UpdatedAt: dbChirp.UpdatedAt,
+			Body:      dbChirp.Body,
+			UserID:    dbChirp.UserID,
+		})
+	}
+
+	respondWithJSON(w, http.StatusOK, chirps)
+}
+
+func (cfg *ApiConfig) HandlerCreateChirps(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req ValidateChirpReq
@@ -67,7 +88,8 @@ func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("couldn't create chirp in db: %w", err)
 
-		respondWithError(w, http.StatusBadRequest, "couldn't create chirp")
+		respondWithError(w, http.StatusInternalServerError, "couldn't create chirp")
+		return
 	}
 
 	chirp := Chirp{

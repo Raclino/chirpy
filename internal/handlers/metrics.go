@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (cfg *ApiConfig) HandlerMetrics(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandlerGetMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 
