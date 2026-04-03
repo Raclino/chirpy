@@ -3,7 +3,20 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"sync/atomic"
 )
+
+func (cfg *ApiConfig) HandlerReset(w http.ResponseWriter, r *http.Request) {
+	cfg.FileserverHits = atomic.Int32{}
+
+	if cfg.Platform != "dev" {
+		w.WriteHeader(http.StatusForbidden)
+	}
+
+	if err := cfg.Db.DeleteAllUsers(r.Context()); err != nil {
+		fmt.Println("couldn't delete all users: %w", err)
+	}
+}
 
 func (cfg *ApiConfig) HandlerGetMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
