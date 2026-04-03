@@ -53,7 +53,7 @@ func (cfg *ApiConfig) HandlerUsers(w http.ResponseWriter, r *http.Request) {
 
 	res, err := json.Marshal(user)
 	if err != nil {
-		fmt.Printf("couldn't Marshal the user: %w", err)
+		fmt.Println("couldn't Marshal the user: %w", err)
 	}
 
 	w.WriteHeader(http.StatusCreated)

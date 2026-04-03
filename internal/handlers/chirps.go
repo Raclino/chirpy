@@ -7,11 +7,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Raclino/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
 type ValidateChirpReq struct {
-	Body string `json:"body"`
+	Body   string    `json:"body"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+type Chirp struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
 }
 
 type ChirpCleanedRsp struct {
@@ -45,21 +55,29 @@ func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 	cleanedBody := cleanChirp(req.Body)
 
 	now := time.Now()
-	chirpParams := CreateChirpParams{
+	chirpParams := database.CreateChirpParams{
 		ID:        uuid.New(),
 		CreatedAt: now,
 		UpdatedAt: now,
 		Body:      cleanedBody,
-		UserID:    uuid.UUID,
-	}
-	chirp, err := cfg.Db.CreateChirp(r.Context(), chirpParams)
-	if err != nil {
-		fmt.Println("couldn't create chirp in db: %w", err)
+		UserID:    req.UserID,
 	}
 
-	respondWithJSON(w, http.StatusOK, ChirpCleanedRsp{
-		CleanedBody: cleanedBody,
-	})
+	createdChirp, err := cfg.Db.CreateChirp(r.Context(), chirpParams)
+	if err != nil {
+		fmt.Println("couldn't create chirp in db: %w", err)
+
+		respondWithError(w, http.StatusBadRequest, "couldn't create chirp")
+	}
+
+	chirp := Chirp{
+		ID:        createdChirp.ID,
+		CreatedAt: createdChirp.CreatedAt,
+		UpdatedAt: createdChirp.UpdatedAt,
+		Body:      createdChirp.Body,
+		UserID:    createdChirp.UserID,
+	}
+	respondWithJSON(w, http.StatusCreated, chirp)
 
 }
 
