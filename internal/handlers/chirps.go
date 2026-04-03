@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type ValidateChirpReq struct {
@@ -24,7 +28,7 @@ var forbiddenWords = map[string]struct{}{
 	"fornax":    {},
 }
 
-func HandlerValidateChirp(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandlerChirps(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req ValidateChirpReq
@@ -39,9 +43,24 @@ func HandlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cleanedBody := cleanChirp(req.Body)
+
+	now := time.Now()
+	chirpParams := CreateChirpParams{
+		ID:        uuid.New(),
+		CreatedAt: now,
+		UpdatedAt: now,
+		Body:      cleanedBody,
+		UserID:    uuid.UUID,
+	}
+	chirp, err := cfg.Db.CreateChirp(r.Context(), chirpParams)
+	if err != nil {
+		fmt.Println("couldn't create chirp in db: %w", err)
+	}
+
 	respondWithJSON(w, http.StatusOK, ChirpCleanedRsp{
 		CleanedBody: cleanedBody,
 	})
+
 }
 
 func cleanChirp(body string) string {
