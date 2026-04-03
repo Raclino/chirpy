@@ -48,6 +48,7 @@ func main() {
 	muxServer.HandleFunc("POST /api/users", apiConfig.HandlerCreateUsers)
 	muxServer.HandleFunc("POST /api/chirps", apiConfig.HandlerCreateChirps)
 	muxServer.HandleFunc("GET /api/chirps", apiConfig.HandlerGetChirps)
+	muxServer.HandleFunc("GET /api/chirps/{chirpID}", apiConfig.HandlerGetChirpsByID)
 	muxServer.HandleFunc("POST /admin/reset", apiConfig.HandlerReset)
 	muxServer.HandleFunc("GET /admin/metrics", apiConfig.HandlerGetMetrics)
 
