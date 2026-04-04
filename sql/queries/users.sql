@@ -5,7 +5,7 @@ VALUES
     ($1, $2, $3, $4, $5) 
 RETURNING id, created_at, updated_at, email;
 
--- name: GetUser :one
+-- name: GetUserByEmail :one
 SELECT
     *
 FROM

@@ -28,10 +28,6 @@ type ChirpCleanedRsp struct {
 	CleanedBody string `json:"cleaned_body"`
 }
 
-type ChirpErrorRsp struct {
-	Error string `json:"error"`
-}
-
 var forbiddenWords = map[string]struct{}{
 	"kerfuffle": {},
 	"sharbert":  {},
@@ -134,28 +130,4 @@ func cleanChirp(body string) string {
 	}
 
 	return strings.Join(words, " ")
-}
-
-func respondWithError(w http.ResponseWriter, code int, msg string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-
-	errResp := ChirpErrorRsp{
-		Error: msg,
-	}
-
-	_ = json.NewEncoder(w).Encode(errResp)
-}
-
-func respondWithJSON(w http.ResponseWriter, code int, payload any) {
-	resp, err := json.Marshal(payload)
-	if err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
-		return
-	}
-	resp = append(resp, '\n')
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(resp)
 }

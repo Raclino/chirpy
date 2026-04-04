@@ -21,7 +21,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
-	Password  string    `json:"password"`
+	// Password  string    `json:"password"`
 }
 
 func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request) {
@@ -29,14 +29,15 @@ func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request)
 
 	var req CreateUserReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		fmt.Printf("couldn't decode the body")
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	timeNow := time.Now()
 	hashedPwd, err := auth.HashPassword(req.Password)
 	if err != nil {
-		fmt.Println(err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't hash password")
+		return
 	}
 	newUser := database.CreateUserParams{
 		ID:             uuid.New(),
@@ -48,7 +49,7 @@ func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request)
 
 	createdUser, err := cfg.Db.CreateUser(r.Context(), newUser)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Couldn't create user")
 		return
 	}
 
@@ -66,4 +67,35 @@ func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write(res)
+}
+
+func (cfg *ApiConfig) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var req CreateUserReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	user, err := cfg.Db.GetUserByEmail(r.Context(), req.Email)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+		return
+	}
+
+	isPwdValid, err := auth.CheckPasswordHash(req.Password, user.HashedPassword)
+	if err != nil || !isPwdValid {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+		return
+	}
+
+	userResponse := User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
+	}
+
+	respondWithJSON(w, http.StatusOK, userResponse)
 }

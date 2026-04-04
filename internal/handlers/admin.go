@@ -14,7 +14,7 @@ func (cfg *ApiConfig) HandlerReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := cfg.Db.DeleteAllUsers(r.Context()); err != nil {
-		fmt.Println("couldn't delete all users: %w", err)
+		fmt.Printf("couldn't delete all users: %w", err)
 	}
 }
 

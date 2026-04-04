@@ -20,9 +20,5 @@ func CheckPasswordHash(password, hash string) (bool, error) {
 		return false, fmt.Errorf("couldn't check pwd with hash: %w", err)
 	}
 
-	if !match {
-		return false, fmt.Errorf("pwd is incorrect")
-	}
-
 	return match, nil
 }
