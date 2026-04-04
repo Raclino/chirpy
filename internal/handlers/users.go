@@ -11,7 +11,8 @@ import (
 )
 
 type CreateUserReq struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type User struct {
@@ -19,6 +20,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
+	Password  string    `json:"password"`
 }
 
 func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +38,7 @@ func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request)
 		CreatedAt: timeNow,
 		UpdatedAt: timeNow,
 		Email:     req.Email,
+		Password:  req.Password,
 	}
 
 	createdUser, err := cfg.Db.CreateUser(r.Context(), newUser)

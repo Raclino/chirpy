@@ -16,7 +16,7 @@ const createUser = `-- name: CreateUser :one
 INSERT INTO
     users (id, created_at, updated_at, email)
 VALUES
-    ($1, $2, $3, $4) RETURNING id, created_at, updated_at, email
+    ($1, $2, $3, $4) RETURNING id, created_at, updated_at, email, hashed_password
 `
 
 type CreateUserParams struct {
@@ -39,13 +39,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Email,
+		&i.HashedPassword,
 	)
 	return i, err
 }
 
 const deleteAllUsers = `-- name: DeleteAllUsers :exec
 DELETE FROM
-    users RETURNING id, created_at, updated_at, email
+    users RETURNING id, created_at, updated_at, email, hashed_password
 `
 
 func (q *Queries) DeleteAllUsers(ctx context.Context) error {
@@ -55,7 +56,7 @@ func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 
 const getUser = `-- name: GetUser :one
 SELECT
-    id, created_at, updated_at, email
+    id, created_at, updated_at, email, hashed_password
 FROM
     users
 WHERE
@@ -70,13 +71,14 @@ func (q *Queries) GetUser(ctx context.Context, email string) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Email,
+		&i.HashedPassword,
 	)
 	return i, err
 }
 
 const getUsers = `-- name: GetUsers :many
 SELECT
-    id, created_at, updated_at, email
+    id, created_at, updated_at, email, hashed_password
 FROM
     users
 `
@@ -95,6 +97,7 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Email,
+			&i.HashedPassword,
 		); err != nil {
 			return nil, err
 		}
