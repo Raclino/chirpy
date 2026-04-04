@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Raclino/chirpy/internal/auth"
 	"github.com/Raclino/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -33,12 +34,16 @@ func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request)
 	}
 
 	timeNow := time.Now()
+	hashedPwd, err := auth.HashPassword(req.Password)
+	if err != nil {
+		fmt.Println(err)
+	}
 	newUser := database.CreateUserParams{
-		ID:        uuid.New(),
-		CreatedAt: timeNow,
-		UpdatedAt: timeNow,
-		Email:     req.Email,
-		Password:  req.Password,
+		ID:             uuid.New(),
+		CreatedAt:      timeNow,
+		UpdatedAt:      timeNow,
+		Email:          req.Email,
+		HashedPassword: hashedPwd,
 	}
 
 	createdUser, err := cfg.Db.CreateUser(r.Context(), newUser)
