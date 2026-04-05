@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log/slog"
 	"sync/atomic"
 
 	"github.com/Raclino/chirpy/internal/database"
@@ -11,4 +12,5 @@ type ApiConfig struct {
 	Db                       *database.Queries
 	Platform                 string
 	JwtSigningVerifyingToken string
+	Logger                   *slog.Logger
 }

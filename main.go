@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"sync/atomic"
@@ -37,11 +38,15 @@ func main() {
 	}
 
 	dbQueries := database.New(db)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
 	apiConfig := &handlers.ApiConfig{
 		FileserverHits:           atomic.Int32{},
 		Db:                       dbQueries,
 		Platform:                 platform,
 		JwtSigningVerifyingToken: jwtSigningVerifyingToken,
+		Logger:                   logger,
 	}
 
 	muxServer := http.NewServeMux()
