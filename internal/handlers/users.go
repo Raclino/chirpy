@@ -11,9 +11,10 @@ import (
 	"github.com/google/uuid"
 )
 
-type CreateUserReq struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+type UserReq struct {
+	Email        string `json:"email"`
+	Password     string `json:"password"`
+	ExpiresInSec int    `json:"expires_in_seconds"`
 }
 
 type User struct {
@@ -21,13 +22,15 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
-	// Password  string    `json:"password"`
+	Token     string    `json:"token"`
 }
+
+var defaultExpiresInSec = 3600
 
 func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var req CreateUserReq
+	var req UserReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
@@ -72,7 +75,7 @@ func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request)
 func (cfg *ApiConfig) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var req CreateUserReq
+	var req UserReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
@@ -90,11 +93,16 @@ func (cfg *ApiConfig) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	expiresInSec := min(req.ExpiresInSec, defaultExpiresInSec)
+
+	jwtToken, err := auth.MakeJWT(user.ID, cfg.JwtSigningVerifyingToken, time.Duration(expiresInSec))
+
 	userResponse := User{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		Token:     jwtToken,
 	}
 
 	respondWithJSON(w, http.StatusOK, userResponse)

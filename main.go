@@ -24,6 +24,7 @@ func main() {
 	const port = "8080"
 
 	platform := os.Getenv("PLATFORM")
+	jwtSigningVerifyingToken := os.Getenv("JWT_SIGNING_VERIFYING")
 	dbURL := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbURL)
@@ -37,9 +38,10 @@ func main() {
 
 	dbQueries := database.New(db)
 	apiConfig := &handlers.ApiConfig{
-		FileserverHits: atomic.Int32{},
-		Db:             dbQueries,
-		Platform:       platform,
+		FileserverHits:           atomic.Int32{},
+		Db:                       dbQueries,
+		Platform:                 platform,
+		JwtSigningVerifyingToken: jwtSigningVerifyingToken,
 	}
 
 	muxServer := http.NewServeMux()

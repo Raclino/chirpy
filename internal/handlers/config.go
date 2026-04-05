@@ -7,7 +7,8 @@ import (
 )
 
 type ApiConfig struct {
-	FileserverHits atomic.Int32
-	Db             *database.Queries
-	Platform       string
+	FileserverHits           atomic.Int32
+	Db                       *database.Queries
+	Platform                 string
+	JwtSigningVerifyingToken string
 }

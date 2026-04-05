@@ -2,6 +2,8 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/alexedwards/argon2id"
@@ -69,4 +71,18 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	}
 
 	return userID, nil
+}
+
+func GetBearerToken(headers http.Header) (string, error) {
+	fmt.Printf("headers: %v\n", headers)
+	tokenString := headers.Get("TOKEN_STRING")
+	if tokenString == "" {
+		return "", fmt.Errorf("couldn't get TOKEN_STRING from header: %s", tokenString)
+
+	}
+	token, found := strings.CutPrefix(tokenString, "Bearer")
+	if !found {
+		return "", fmt.Errorf("couldn't cut prefix Bearer")
+	}
+	return strings.TrimSpace(token), nil
 }
