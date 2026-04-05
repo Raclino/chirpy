@@ -65,6 +65,8 @@ func main() {
 		Addr:    ":" + port,
 	}
 
+	logger.Info("starting server", "addr", server.Addr)
+
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
