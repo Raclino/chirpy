@@ -74,10 +74,9 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 }
 
 func GetBearerToken(headers http.Header) (string, error) {
-	fmt.Printf("headers: %v\n", headers)
-	tokenString := headers.Get("TOKEN_STRING")
+	tokenString := headers.Get("Authorization")
 	if tokenString == "" {
-		return "", fmt.Errorf("couldn't get TOKEN_STRING from header: %s", tokenString)
+		return "", fmt.Errorf("couldn't get Authorization from header: %s", tokenString)
 
 	}
 	token, found := strings.CutPrefix(tokenString, "Bearer")

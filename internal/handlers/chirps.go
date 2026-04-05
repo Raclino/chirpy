@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Raclino/chirpy/internal/auth"
 	"github.com/Raclino/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -83,6 +84,19 @@ func (cfg *ApiConfig) HandlerCreateChirps(w http.ResponseWriter, r *http.Request
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
+	jwtToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		fmt.Printf("jwtToken Error: %v\n", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	userIDFromJwtToken, err := auth.ValidateJWT(jwtToken, cfg.JwtSigningVerifyingToken)
+	if err != nil {
+		fmt.Printf("ValidateJWT: %v\n", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized, token not valid")
+		return
+	}
 
 	if len(req.Body) > 140 {
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
@@ -97,12 +111,12 @@ func (cfg *ApiConfig) HandlerCreateChirps(w http.ResponseWriter, r *http.Request
 		CreatedAt: now,
 		UpdatedAt: now,
 		Body:      cleanedBody,
-		UserID:    req.UserID,
+		UserID:    userIDFromJwtToken,
 	}
 
 	createdChirp, err := cfg.Db.CreateChirp(r.Context(), chirpParams)
 	if err != nil {
-		fmt.Println("couldn't create chirp in db: %w", err)
+		fmt.Printf("couldn't create chirp in db: %v\n", err)
 
 		respondWithError(w, http.StatusInternalServerError, "couldn't create chirp")
 		return

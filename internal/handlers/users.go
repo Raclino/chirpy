@@ -22,7 +22,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
-	Token     string    `json:"token"`
+	Token     string    `json:"token,omitempty"`
 }
 
 var defaultExpiresInSec = 3600
@@ -65,7 +65,7 @@ func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request)
 
 	res, err := json.Marshal(user)
 	if err != nil {
-		fmt.Println("couldn't Marshal the user: %w", err)
+		fmt.Printf("couldn't Marshal the user: %v\n", err)
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -93,9 +93,16 @@ func (cfg *ApiConfig) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expiresInSec := min(req.ExpiresInSec, defaultExpiresInSec)
+	expiresInSec := defaultExpiresInSec
+	if req.ExpiresInSec > 0 && req.ExpiresInSec < defaultExpiresInSec {
+		expiresInSec = req.ExpiresInSec
+	}
 
-	jwtToken, err := auth.MakeJWT(user.ID, cfg.JwtSigningVerifyingToken, time.Duration(expiresInSec))
+	jwtToken, err := auth.MakeJWT(user.ID, cfg.JwtSigningVerifyingToken, time.Duration(expiresInSec)*time.Second)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create token")
+		return
+	}
 
 	userResponse := User{
 		ID:        user.ID,
