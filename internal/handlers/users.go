@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -11,20 +12,24 @@ import (
 )
 
 type UserReq struct {
-	Email        string `json:"email"`
-	Password     string `json:"password"`
-	ExpiresInSec int    `json:"expires_in_seconds"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token,omitempty"`
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token,omitempty"`
+	RefreshToken string    `json:"refresh_token,omitempty"`
 }
 
-var defaultExpiresInSec = 3600
+type RefreshToken struct {
+	Token string `json:"token"`
+}
+
+var oneHourExpiresInSec = 3600
 
 func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -100,12 +105,25 @@ func (cfg *ApiConfig) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expiresInSec := defaultExpiresInSec
-	if req.ExpiresInSec > 0 && req.ExpiresInSec < defaultExpiresInSec {
-		expiresInSec = req.ExpiresInSec
+	newRefreshToken := auth.MakeRefreshToken()
+
+	now := time.Now()
+	storeRefreshTokenParams := database.CreateRefreshTokenParams{
+		Token:     newRefreshToken,
+		CreatedAt: now,
+		UpdatedAt: now,
+		ExpiresAt: time.Now().UTC().AddDate(0, 0, 60),
+		RevokedAt: sql.NullTime{},
+		UserID:    user.ID,
+	}
+	refreshToken, err := cfg.Db.CreateRefreshToken(r.Context(), storeRefreshTokenParams)
+	if err != nil {
+		cfg.Logger.Error("failed to create refresh_token", "user_id", user.ID.String(), "email", user.Email, "error", err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh_token")
+		return
 	}
 
-	jwtToken, err := auth.MakeJWT(user.ID, cfg.JwtSigningVerifyingToken, time.Duration(expiresInSec)*time.Second)
+	accessTokenJWT, err := auth.MakeJWT(user.ID, cfg.JwtSigningVerifyingToken, time.Duration(oneHourExpiresInSec)*time.Second)
 	if err != nil {
 		cfg.Logger.Error("failed to create jwt", "user_id", user.ID.String(), "email", user.Email, "error", err)
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create token")
@@ -115,11 +133,12 @@ func (cfg *ApiConfig) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 	cfg.Logger.Info("user logged in", "user_id", user.ID.String(), "email", user.Email)
 
 	userResponse := User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
-		Token:     jwtToken,
+		ID:           user.ID,
+		CreatedAt:    user.CreatedAt,
+		UpdatedAt:    user.UpdatedAt,
+		Email:        user.Email,
+		Token:        accessTokenJWT,
+		RefreshToken: refreshToken,
 	}
 
 	respondWithJSON(w, http.StatusOK, userResponse)
