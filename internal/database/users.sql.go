@@ -120,3 +120,41 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 	}
 	return items, nil
 }
+
+const updateUserPwdEmail = `-- name: UpdateUserPwdEmail :one
+UPDATE users 
+SET email = $2, hashed_password = $3, updated_at = $4
+WHERE id = $1
+RETURNING id, created_at, updated_at, email
+`
+
+type UpdateUserPwdEmailParams struct {
+	ID             uuid.UUID
+	Email          string
+	HashedPassword string
+	UpdatedAt      time.Time
+}
+
+type UpdateUserPwdEmailRow struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Email     string
+}
+
+func (q *Queries) UpdateUserPwdEmail(ctx context.Context, arg UpdateUserPwdEmailParams) (UpdateUserPwdEmailRow, error) {
+	row := q.db.QueryRowContext(ctx, updateUserPwdEmail,
+		arg.ID,
+		arg.Email,
+		arg.HashedPassword,
+		arg.UpdatedAt,
+	)
+	var i UpdateUserPwdEmailRow
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Email,
+	)
+	return i, err
+}
