@@ -15,14 +15,16 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const (
+	filePathRoot = "."
+	port         = "8080"
+)
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	const filePathRoot = "."
-	const port = "8080"
 
 	platform := os.Getenv("PLATFORM")
 	jwtSigningVerifyingToken := os.Getenv("JWT_SIGNING_VERIFYING")
@@ -58,6 +60,7 @@ func main() {
 	muxServer.HandleFunc("POST /api/chirps", apiConfig.HandlerCreateChirps)
 	muxServer.HandleFunc("GET /api/chirps", apiConfig.HandlerGetChirps)
 	muxServer.HandleFunc("GET /api/chirps/{chirpID}", apiConfig.HandlerGetChirpsByID)
+	muxServer.HandleFunc("DELETE /api/chirps/{chirpID}", apiConfig.HandlerDeleteChirpsByID)
 	muxServer.HandleFunc("POST /api/refresh", apiConfig.HandlerRefresh)
 	muxServer.HandleFunc("POST /api/revoke", apiConfig.HandlerRevoke)
 	muxServer.HandleFunc("POST /admin/reset", apiConfig.HandlerReset)

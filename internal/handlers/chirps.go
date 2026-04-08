@@ -117,6 +117,52 @@ func (cfg *ApiConfig) HandlerCreateChirps(w http.ResponseWriter, r *http.Request
 
 	respondWithJSON(w, http.StatusCreated, mapDBChirpToResponse(createdChirp))
 }
+func (cfg *ApiConfig) HandlerDeleteChirpsByID(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	jwtToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		cfg.Logger.Warn("missing or invalid Authorization header", "path", r.URL.Path, "method", r.Method, "error", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(jwtToken, cfg.JwtSigningVerifyingToken)
+	if err != nil {
+		cfg.Logger.Warn("invalid jwt token", "path", r.URL.Path, "method", r.Method, "error", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	chirpIDStr := r.PathValue("chirpID")
+	chirpID, err := uuid.Parse(chirpIDStr)
+	if err != nil {
+		cfg.Logger.Warn("invalid chirp queryParams", "path", r.URL.Path, "method", r.Method, "error", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	dbChirp, err := cfg.Db.GetChirpByID(r.Context(), chirpID)
+	if err != nil {
+		cfg.Logger.Warn("error getting chirp by id", "path", r.URL.Path, "method", r.Method, "error", err)
+		respondWithError(w, http.StatusNotFound, "")
+		return
+	}
+
+	if dbChirp.UserID != userID {
+		respondWithError(w, http.StatusForbidden, "Forbidden")
+		return
+	}
+
+	if err := cfg.Db.DeleteChirpByID(r.Context(), dbChirp.ID); err != nil {
+		cfg.Logger.Warn("error deleting chirp by id", "path", r.URL.Path, "method", r.Method, "error", err)
+		respondWithError(w, http.StatusForbidden, "")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
+}
 
 func cleanChirp(body string) string {
 	words := strings.Split(body, " ")
