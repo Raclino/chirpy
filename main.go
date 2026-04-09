@@ -25,13 +25,13 @@ const (
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Stdout, os.Args); err != nil {
+	if err := run(ctx, os.Getenv, os.Stdout, os.Args); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, w io.Writer, args []string) error {
+func run(ctx context.Context, getenv func(string) string, stdout io.Writer, args []string) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
@@ -40,21 +40,20 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 		return err
 	}
 
-	platform := os.Getenv("PLATFORM")
-	jwtSigningVerifyingToken := os.Getenv("JWT_SIGNING_VERIFYING")
-	dbURL := os.Getenv("DB_URL")
+	platform := getenv("PLATFORM")
+	jwtSigningVerifyingToken := getenv("JWT_SIGNING_VERIFYING")
+	dbURL := getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		return err
 	}
-
 	if err := db.Ping(); err != nil {
 		return err
 	}
 
 	dbQueries := database.New(db)
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	logger := slog.New(slog.NewTextHandler(stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
 	apiConfig := &handlers.ApiConfig{
