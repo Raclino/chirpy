@@ -22,6 +22,7 @@ func addRoutes(
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiConfig.HandleDeleteChirpsByID)
 	mux.HandleFunc("POST /api/refresh", apiConfig.HandleRefresh)
 	mux.HandleFunc("POST /api/revoke", apiConfig.HandleRevoke)
+	mux.HandleFunc("POST /api/polka/webhooks", apiConfig.HandlePolkaWebhooks)
 	mux.HandleFunc("POST /admin/reset", apiConfig.HandleReset)
-	mux.HandleFunc("GET /admin/metrics", apiConfig.HandlerGetMetrics)
+	mux.HandleFunc("GET /admin/metrics", apiConfig.HandleGetMetrics)
 }

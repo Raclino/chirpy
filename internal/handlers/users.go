@@ -23,10 +23,18 @@ type User struct {
 	Email        string    `json:"email"`
 	Token        string    `json:"token,omitempty"`
 	RefreshToken string    `json:"refresh_token,omitempty"`
+	IsChirpyRed  bool      `json:"is_chirpy_red"`
 }
 
 type RefreshToken struct {
 	Token string `json:"token"`
+}
+
+type WebHooksReq struct {
+	Event string `json:"event"`
+	Data  struct {
+		UserID uuid.UUID `json:"user_id"`
+	} `json:"data"`
 }
 
 var oneHourExpiresInSec = 3600
@@ -55,6 +63,7 @@ func (cfg *ApiConfig) HandleCreateUsers(w http.ResponseWriter, r *http.Request) 
 		UpdatedAt:      now,
 		Email:          req.Email,
 		HashedPassword: hashedPwd,
+		IsChirpyRed:    false,
 	}
 
 	createdUser, err := cfg.Db.CreateUser(r.Context(), newUser)
@@ -196,4 +205,26 @@ func (cfg *ApiConfig) HandleUpdateUsers(w http.ResponseWriter, r *http.Request) 
 		Token:     jwtToken,
 	}
 	respondWithJSON(w, http.StatusOK, user)
+}
+
+func (cfg *ApiConfig) HandlePolkaWebhooks(w http.ResponseWriter, r *http.Request) {
+	var req WebHooksReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		cfg.Logger.Warn("invalid webhooks user request body", "path", r.URL.Path, "method", r.Method, "error", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Event != "user.upgraded" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	_, err := cfg.Db.UpdateUserChirpyRedMembership(r.Context(), req.Data.UserID)
+	if err != nil {
+		http.Error(w, "", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
