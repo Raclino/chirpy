@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-func (cfg *ApiConfig) HandlerReset(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleReset(w http.ResponseWriter, r *http.Request) {
 	cfg.FileserverHits = atomic.Int32{}
 
 	if cfg.Platform != "dev" {
@@ -18,7 +18,7 @@ func (cfg *ApiConfig) HandlerReset(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (cfg *ApiConfig) HandlerGetMetrics(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 

@@ -31,7 +31,7 @@ type RefreshToken struct {
 
 var oneHourExpiresInSec = 3600
 
-func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleCreateUsers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req UserReq
@@ -76,7 +76,7 @@ func (cfg *ApiConfig) HandlerCreateUsers(w http.ResponseWriter, r *http.Request)
 	respondWithJSON(w, http.StatusCreated, user)
 }
 
-func (cfg *ApiConfig) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleUserLogin(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req UserReq
@@ -144,7 +144,7 @@ func (cfg *ApiConfig) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, userResponse)
 }
 
-func (cfg *ApiConfig) HandlerUpdateUsers(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleUpdateUsers(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	jwtToken, err := auth.GetBearerToken(r.Header)

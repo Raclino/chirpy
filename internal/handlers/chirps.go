@@ -29,7 +29,7 @@ var forbiddenWords = map[string]struct{}{
 	"fornax":    {},
 }
 
-func (cfg *ApiConfig) HandlerGetChirps(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleGetChirps(w http.ResponseWriter, r *http.Request) {
 	dbChirps, err := cfg.Db.GetChirps(r.Context())
 	if err != nil {
 		cfg.Logger.Error("failed to get chirps", "path", r.URL.Path, "method", r.Method, "error", err)
@@ -45,7 +45,7 @@ func (cfg *ApiConfig) HandlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, chirps)
 }
 
-func (cfg *ApiConfig) HandlerGetChirpsByID(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleGetChirpsByID(w http.ResponseWriter, r *http.Request) {
 	chirpIDStr := r.PathValue("chirpID")
 
 	chirpID, err := uuid.Parse(chirpIDStr)
@@ -65,7 +65,7 @@ func (cfg *ApiConfig) HandlerGetChirpsByID(w http.ResponseWriter, r *http.Reques
 	respondWithJSON(w, http.StatusOK, mapDBChirpToResponse(dbChirp))
 }
 
-func (cfg *ApiConfig) HandlerCreateChirps(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleCreateChirps(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req CreateChirpReq
@@ -117,7 +117,7 @@ func (cfg *ApiConfig) HandlerCreateChirps(w http.ResponseWriter, r *http.Request
 
 	respondWithJSON(w, http.StatusCreated, mapDBChirpToResponse(createdChirp))
 }
-func (cfg *ApiConfig) HandlerDeleteChirpsByID(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleDeleteChirpsByID(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	jwtToken, err := auth.GetBearerToken(r.Header)

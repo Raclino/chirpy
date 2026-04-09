@@ -9,7 +9,7 @@ import (
 	"github.com/Raclino/chirpy/internal/database"
 )
 
-func (cfg *ApiConfig) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleRefresh(w http.ResponseWriter, r *http.Request) {
 	requestRefreshToken, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		cfg.Logger.Warn("missing or invalid refresh bearer token",
@@ -79,7 +79,7 @@ func (cfg *ApiConfig) HandlerRefresh(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, RefreshToken{Token: newToken})
 }
 
-func (cfg *ApiConfig) HandlerRevoke(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) HandleRevoke(w http.ResponseWriter, r *http.Request) {
 	requestRefreshToken, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		cfg.Logger.Warn("missing or invalid refresh bearer token for revoke",
