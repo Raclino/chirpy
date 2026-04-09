@@ -13,4 +13,5 @@ type ApiConfig struct {
 	Platform                 string
 	JwtSigningVerifyingToken string
 	Logger                   *slog.Logger
+	PolkaKey                 string
 }

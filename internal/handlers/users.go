@@ -209,6 +209,18 @@ func (cfg *ApiConfig) HandleUpdateUsers(w http.ResponseWriter, r *http.Request) 
 }
 
 func (cfg *ApiConfig) HandlePolkaWebhooks(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		cfg.Logger.Error("invalid apiKey webhooks user ", "path", r.URL.Path, "method", r.Method, "error", err)
+		respondWithError(w, http.StatusUnauthorized, "Invalid request header")
+		return
+	}
+
+	if apiKey != cfg.PolkaKey {
+		cfg.Logger.Warn("invalid webhooks user request body", "path", r.URL.Path, "method", r.Method, "error", err)
+		respondWithError(w, http.StatusUnauthorized, "Invalid request header")
+	}
+
 	var req WebHooksReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		cfg.Logger.Warn("invalid webhooks user request body", "path", r.URL.Path, "method", r.Method, "error", err)

@@ -95,3 +95,12 @@ func MakeRefreshToken() string {
 
 	return encodedStr
 }
+
+func GetAPIKey(headers http.Header) (string, error) {
+	apiKeyStr := headers.Get("Authorization")
+	apiKey, found := strings.CutPrefix(apiKeyStr, "ApiKey")
+	if !found {
+		return "", fmt.Errorf("couldn't cut prefix ApiKey")
+	}
+	return strings.TrimSpace(apiKey), nil
+}

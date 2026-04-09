@@ -43,6 +43,7 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer, args
 	platform := getenv("PLATFORM")
 	jwtSigningVerifyingToken := getenv("JWT_SIGNING_VERIFYING")
 	dbURL := getenv("DB_URL")
+	polkaKey := getenv("POLKA_KEY")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -62,6 +63,7 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer, args
 		Platform:                 platform,
 		JwtSigningVerifyingToken: jwtSigningVerifyingToken,
 		Logger:                   logger,
+		PolkaKey:                 polkaKey,
 	}
 
 	srv := NewServer(apiConfig)
