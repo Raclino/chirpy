@@ -66,19 +66,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	}
 
 	muxServer := http.NewServeMux()
-	muxServer.Handle("/app/", apiConfig.MiddlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(filePathRoot)))))
-	muxServer.HandleFunc("GET /api/healthz", handlers.HandlerGetHealth)
-	muxServer.HandleFunc("POST /api/users", apiConfig.HandlerCreateUsers)
-	muxServer.HandleFunc("PUT /api/users", apiConfig.HandlerUpdateUsers)
-	muxServer.HandleFunc("POST /api/login", apiConfig.HandlerUserLogin)
-	muxServer.HandleFunc("POST /api/chirps", apiConfig.HandlerCreateChirps)
-	muxServer.HandleFunc("GET /api/chirps", apiConfig.HandlerGetChirps)
-	muxServer.HandleFunc("GET /api/chirps/{chirpID}", apiConfig.HandlerGetChirpsByID)
-	muxServer.HandleFunc("DELETE /api/chirps/{chirpID}", apiConfig.HandlerDeleteChirpsByID)
-	muxServer.HandleFunc("POST /api/refresh", apiConfig.HandlerRefresh)
-	muxServer.HandleFunc("POST /api/revoke", apiConfig.HandlerRevoke)
-	muxServer.HandleFunc("POST /admin/reset", apiConfig.HandlerReset)
-	muxServer.HandleFunc("GET /admin/metrics", apiConfig.HandlerGetMetrics)
+	addRoutes(muxServer, apiConfig)
 
 	server := &http.Server{
 		Handler: muxServer,
