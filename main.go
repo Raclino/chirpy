@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	"log"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync/atomic"
 
 	"github.com/Raclino/chirpy/internal/database"
@@ -21,9 +24,20 @@ const (
 )
 
 func main() {
+	ctx := context.Background()
+	if err := run(ctx, os.Stdout, os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context, w io.Writer, args []string) error {
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	platform := os.Getenv("PLATFORM")
@@ -32,11 +46,11 @@ func main() {
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if err := db.Ping(); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	dbQueries := database.New(db)
@@ -74,7 +88,8 @@ func main() {
 	logger.Info("starting server", "addr", server.Addr)
 
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatal(err)
+		return err
 	}
 
+	return err
 }
