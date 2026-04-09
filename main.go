@@ -65,19 +65,17 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 		Logger:                   logger,
 	}
 
-	muxServer := http.NewServeMux()
-	addRoutes(muxServer, apiConfig)
-
-	server := &http.Server{
-		Handler: muxServer,
+	srv := NewServer(apiConfig)
+	httpServer := &http.Server{
+		Handler: srv,
 		Addr:    ":" + port,
 	}
 
-	logger.Info("starting server", "addr", server.Addr)
-
-	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+	if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {
 		return err
 	}
+
+	logger.Info("starting server", "addr", httpServer.Addr)
 
 	return err
 }
