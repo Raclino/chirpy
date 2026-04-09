@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -31,6 +32,7 @@ var forbiddenWords = map[string]struct{}{
 
 func (cfg *ApiConfig) HandleGetChirps(w http.ResponseWriter, r *http.Request) {
 	authorIDStr := r.URL.Query().Get("author_id")
+	descSortingQuery := r.URL.Query().Get("sort")
 
 	if authorIDStr != "" {
 		authorID, err := uuid.Parse(authorIDStr)
@@ -78,6 +80,9 @@ func (cfg *ApiConfig) HandleGetChirps(w http.ResponseWriter, r *http.Request) {
 		chirps = append(chirps, mapDBChirpToResponse(dbChirp))
 	}
 
+	if descSortingQuery == "desc" {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[j].CreatedAt.Before(chirps[i].CreatedAt) })
+	}
 	respondWithJSON(w, http.StatusOK, chirps)
 }
 
