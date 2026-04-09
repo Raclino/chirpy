@@ -30,6 +30,42 @@ var forbiddenWords = map[string]struct{}{
 }
 
 func (cfg *ApiConfig) HandleGetChirps(w http.ResponseWriter, r *http.Request) {
+	authorIDStr := r.URL.Query().Get("author_id")
+
+	if authorIDStr != "" {
+		authorID, err := uuid.Parse(authorIDStr)
+		if err != nil {
+			cfg.Logger.Warn("invalid author_id query param",
+				"path", r.URL.Path,
+				"method", r.Method,
+				"author_id", authorIDStr,
+				"error", err,
+			)
+			respondWithError(w, http.StatusBadRequest, "Invalid author_id")
+			return
+		}
+
+		dbChirps, err := cfg.Db.GetChirpsByAuthorID(r.Context(), authorID)
+		if err != nil {
+			cfg.Logger.Error("failed to get chirps by author id",
+				"path", r.URL.Path,
+				"method", r.Method,
+				"author_id", authorID.String(),
+				"error", err,
+			)
+			respondWithError(w, http.StatusInternalServerError, "Couldn't get chirps")
+			return
+		}
+
+		chirps := make([]Chirp, 0, len(dbChirps))
+		for _, dbChirp := range dbChirps {
+			chirps = append(chirps, mapDBChirpToResponse(dbChirp))
+		}
+
+		respondWithJSON(w, http.StatusOK, chirps)
+		return
+	}
+
 	dbChirps, err := cfg.Db.GetChirps(r.Context())
 	if err != nil {
 		cfg.Logger.Error("failed to get chirps", "path", r.URL.Path, "method", r.Method, "error", err)
