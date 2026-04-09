@@ -14,9 +14,9 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO
-    users (id, created_at, updated_at, email, hashed_password, is_chirpy_red)
+    users (id, created_at, updated_at, email, hashed_password)
 VALUES
-    ($1, $2, $3, $4, $5, $6) 
+    ($1, $2, $3, $4, $5) 
 RETURNING id, created_at, updated_at, email, is_chirpy_red
 `
 
@@ -26,7 +26,6 @@ type CreateUserParams struct {
 	UpdatedAt      time.Time
 	Email          string
 	HashedPassword string
-	IsChirpyRed    bool
 }
 
 type CreateUserRow struct {
@@ -44,7 +43,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		arg.UpdatedAt,
 		arg.Email,
 		arg.HashedPassword,
-		arg.IsChirpyRed,
 	)
 	var i CreateUserRow
 	err := row.Scan(
@@ -129,10 +127,16 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 
 const updateUserChirpyRedMembership = `-- name: UpdateUserChirpyRedMembership :one
 UPDATE users
-SET is_chirpy_red = true
+SET is_chirpy_red = true,
+    updated_at = $2
 WHERE id = $1
 RETURNING id, created_at, updated_at, email, is_chirpy_red
 `
+
+type UpdateUserChirpyRedMembershipParams struct {
+	ID        uuid.UUID
+	UpdatedAt time.Time
+}
 
 type UpdateUserChirpyRedMembershipRow struct {
 	ID          uuid.UUID
@@ -142,8 +146,8 @@ type UpdateUserChirpyRedMembershipRow struct {
 	IsChirpyRed bool
 }
 
-func (q *Queries) UpdateUserChirpyRedMembership(ctx context.Context, id uuid.UUID) (UpdateUserChirpyRedMembershipRow, error) {
-	row := q.db.QueryRowContext(ctx, updateUserChirpyRedMembership, id)
+func (q *Queries) UpdateUserChirpyRedMembership(ctx context.Context, arg UpdateUserChirpyRedMembershipParams) (UpdateUserChirpyRedMembershipRow, error) {
+	row := q.db.QueryRowContext(ctx, updateUserChirpyRedMembership, arg.ID, arg.UpdatedAt)
 	var i UpdateUserChirpyRedMembershipRow
 	err := row.Scan(
 		&i.ID,

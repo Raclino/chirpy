@@ -1,8 +1,8 @@
 -- name: CreateUser :one
 INSERT INTO
-    users (id, created_at, updated_at, email, hashed_password, is_chirpy_red)
+    users (id, created_at, updated_at, email, hashed_password)
 VALUES
-    ($1, $2, $3, $4, $5, $6) 
+    ($1, $2, $3, $4, $5) 
 RETURNING id, created_at, updated_at, email, is_chirpy_red;
 
 -- name: GetUserByEmail :one
@@ -31,6 +31,7 @@ RETURNING id, created_at, updated_at, email, is_chirpy_red;
 
 -- name: UpdateUserChirpyRedMembership :one
 UPDATE users
-SET is_chirpy_red = true
+SET is_chirpy_red = true,
+    updated_at = $2
 WHERE id = $1
 RETURNING id, created_at, updated_at, email, is_chirpy_red;

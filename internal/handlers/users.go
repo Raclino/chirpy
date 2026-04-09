@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -63,7 +64,6 @@ func (cfg *ApiConfig) HandleCreateUsers(w http.ResponseWriter, r *http.Request) 
 		UpdatedAt:      now,
 		Email:          req.Email,
 		HashedPassword: hashedPwd,
-		IsChirpyRed:    false,
 	}
 
 	createdUser, err := cfg.Db.CreateUser(r.Context(), newUser)
@@ -148,6 +148,7 @@ func (cfg *ApiConfig) HandleUserLogin(w http.ResponseWriter, r *http.Request) {
 		Email:        user.Email,
 		Token:        accessTokenJWT,
 		RefreshToken: refreshToken,
+		IsChirpyRed:  user.IsChirpyRed,
 	}
 
 	respondWithJSON(w, http.StatusOK, userResponse)
@@ -220,11 +221,15 @@ func (cfg *ApiConfig) HandlePolkaWebhooks(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_, err := cfg.Db.UpdateUserChirpyRedMembership(r.Context(), req.Data.UserID)
+	dbUser, err := cfg.Db.UpdateUserChirpyRedMembership(r.Context(), database.UpdateUserChirpyRedMembershipParams{
+		ID:        req.Data.UserID,
+		UpdatedAt: time.Now().UTC(),
+	})
 	if err != nil {
 		http.Error(w, "", http.StatusNotFound)
 		return
 	}
+	fmt.Printf("dbUser: %v+", dbUser)
 
 	w.WriteHeader(http.StatusNoContent)
 }
