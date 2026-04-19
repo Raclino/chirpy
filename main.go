@@ -31,7 +31,7 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, getenv func(string) string, stdout io.Writer, args []string) error {
+func run(ctx context.Context, getenv func(string) string, stdout io.Writer, _ []string) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
