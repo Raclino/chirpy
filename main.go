@@ -13,6 +13,7 @@ import (
 
 	"github.com/Raclino/chirpy/internal/database"
 	"github.com/Raclino/chirpy/internal/handlers"
+	"github.com/Raclino/chirpy/internal/services"
 	"github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
@@ -57,13 +58,21 @@ func run(ctx context.Context, getenv func(string) string, stdout io.Writer, _ []
 	logger := slog.New(slog.NewTextHandler(stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
+	svc := &services.Service{
+		DB:        dbQueries,
+		Logger:    logger,
+		JWTSecret: jwtSigningVerifyingToken,
+		PolkaKey:  polkaKey,
+	}
+
 	apiConfig := &handlers.ApiConfig{
 		FileserverHits:           atomic.Int32{},
 		Db:                       dbQueries,
 		Platform:                 platform,
-		JwtSigningVerifyingToken: jwtSigningVerifyingToken,
 		Logger:                   logger,
+		JwtSigningVerifyingToken: jwtSigningVerifyingToken,
 		PolkaKey:                 polkaKey,
+		Service:                  svc,
 	}
 
 	srv := NewServer(apiConfig)

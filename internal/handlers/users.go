@@ -50,36 +50,19 @@ func (cfg *ApiConfig) HandleCreateUsers(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	now := time.Now()
-	hashedPwd, err := auth.HashPassword(req.Password)
-	if err != nil {
-		cfg.Logger.Error("failed to hash password", "path", r.URL.Path, "method", r.Method, "email", req.Email, "error", err)
-		respondWithError(w, http.StatusInternalServerError, "Couldn't hash password")
-		return
-	}
-
-	newUser := database.CreateUserParams{
-		ID:             uuid.New(),
-		CreatedAt:      now,
-		UpdatedAt:      now,
-		Email:          req.Email,
-		HashedPassword: hashedPwd,
-	}
-
-	createdUser, err := cfg.Db.CreateUser(r.Context(), newUser)
+	createdUser, err := cfg.Service.CreateUser(r.Context(), req.Email, req.Password)
 	if err != nil {
 		cfg.Logger.Warn("failed to create user", "path", r.URL.Path, "method", r.Method, "email", req.Email, "error", err)
 		respondWithError(w, http.StatusBadRequest, "Couldn't create user")
 		return
 	}
 
-	cfg.Logger.Info("user created", "user_id", createdUser.ID.String(), "email", createdUser.Email)
-
 	user := User{
-		ID:        createdUser.ID,
-		CreatedAt: createdUser.CreatedAt,
-		UpdatedAt: createdUser.UpdatedAt,
-		Email:     createdUser.Email,
+		ID:          createdUser.ID,
+		CreatedAt:   createdUser.CreatedAt,
+		UpdatedAt:   createdUser.UpdatedAt,
+		Email:       createdUser.Email,
+		IsChirpyRed: createdUser.IsChirpyRed,
 	}
 
 	respondWithJSON(w, http.StatusCreated, user)
