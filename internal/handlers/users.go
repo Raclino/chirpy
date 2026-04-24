@@ -1,14 +1,15 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Raclino/chirpy/internal/auth"
 	"github.com/Raclino/chirpy/internal/database"
+	"github.com/Raclino/chirpy/internal/services"
 	"github.com/google/uuid"
 )
 
@@ -78,60 +79,29 @@ func (cfg *ApiConfig) HandleUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := cfg.Db.GetUserByEmail(r.Context(), req.Email)
+	result, err := cfg.Service.UserLogin(r.Context(), req.Email, req.Password)
 	if err != nil {
-		cfg.Logger.Warn("login failed: user lookup", "email", req.Email, "error", err)
-		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+		if errors.Is(err, services.ErrInvalidCredentials) {
+			cfg.Logger.Warn("login failed", "path", r.URL.Path, "method", r.Method, "email", req.Email)
+			respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+			return
+		}
+
+		cfg.Logger.Error("login failed", "path", r.URL.Path, "method", r.Method, "email", req.Email, "error", err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't login user")
 		return
 	}
 
-	isPwdValid, err := auth.CheckPasswordHash(req.Password, user.HashedPassword)
-	if err != nil {
-		cfg.Logger.Error("failed to verify password hash", "user_id", user.ID.String(), "email", req.Email, "error", err)
-		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
-		return
-	}
-	if !isPwdValid {
-		cfg.Logger.Warn("login failed: invalid password", "user_id", user.ID.String(), "email", req.Email)
-		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
-		return
-	}
-
-	newRefreshToken := auth.MakeRefreshToken()
-
-	now := time.Now()
-	storeRefreshTokenParams := database.CreateRefreshTokenParams{
-		Token:     newRefreshToken,
-		CreatedAt: now,
-		UpdatedAt: now,
-		ExpiresAt: time.Now().UTC().AddDate(0, 0, 60),
-		RevokedAt: sql.NullTime{},
-		UserID:    user.ID,
-	}
-	refreshToken, err := cfg.Db.CreateRefreshToken(r.Context(), storeRefreshTokenParams)
-	if err != nil {
-		cfg.Logger.Error("failed to create refresh_token", "user_id", user.ID.String(), "email", user.Email, "error", err)
-		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh_token")
-		return
-	}
-
-	accessTokenJWT, err := auth.MakeJWT(user.ID, cfg.JwtSigningVerifyingToken, time.Duration(oneHourExpiresInSec)*time.Second)
-	if err != nil {
-		cfg.Logger.Error("failed to create jwt", "user_id", user.ID.String(), "email", user.Email, "error", err)
-		respondWithError(w, http.StatusInternalServerError, "Couldn't create token")
-		return
-	}
-
-	cfg.Logger.Info("user logged in", "user_id", user.ID.String(), "email", user.Email)
+	cfg.Logger.Info("user logged in", "user_id", result.User.ID.String(), "email", result.User.Email)
 
 	userResponse := User{
-		ID:           user.ID,
-		CreatedAt:    user.CreatedAt,
-		UpdatedAt:    user.UpdatedAt,
-		Email:        user.Email,
-		Token:        accessTokenJWT,
-		RefreshToken: refreshToken,
-		IsChirpyRed:  user.IsChirpyRed,
+		ID:           result.User.ID,
+		CreatedAt:    result.User.CreatedAt,
+		UpdatedAt:    result.User.UpdatedAt,
+		Email:        result.User.Email,
+		Token:        result.AccessToken,
+		RefreshToken: result.RefreshToken,
+		IsChirpyRed:  result.User.IsChirpyRed,
 	}
 
 	respondWithJSON(w, http.StatusOK, userResponse)
