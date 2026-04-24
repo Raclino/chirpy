@@ -112,51 +112,54 @@ func (cfg *ApiConfig) HandleUpdateUsers(w http.ResponseWriter, r *http.Request) 
 
 	jwtToken, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		cfg.Logger.Warn("missing or invalid Authorization header", "path", r.URL.Path, "method", r.Method, "error", err)
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	userID, err := auth.ValidateJWT(jwtToken, cfg.JwtSigningVerifyingToken)
-	if err != nil {
-		cfg.Logger.Warn("invalid jwt token", "path", r.URL.Path, "method", r.Method, "error", err)
+		cfg.Logger.Warn("missing or invalid Authorization header",
+			"path", r.URL.Path,
+			"method", r.Method,
+			"error", err,
+		)
 		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	var req UserReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		cfg.Logger.Warn("invalid update user request body", "path", r.URL.Path, "method", r.Method, "error", err)
+		cfg.Logger.Warn("invalid update user request body",
+			"path", r.URL.Path,
+			"method", r.Method,
+			"error", err,
+		)
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	hashedPwd, err := auth.HashPassword(req.Password)
+	updatedUser, err := cfg.Service.UpdateUsers(r.Context(), jwtToken, req.Email, req.Password)
 	if err != nil {
-		cfg.Logger.Error("failed to hash password", "path", r.URL.Path, "method", r.Method, "email", req.Email, "error", err)
-		respondWithError(w, http.StatusInternalServerError, "Couldn't hash password")
+		if errors.Is(err, services.ErrUnauthorized) {
+			cfg.Logger.Warn("unauthorized update user request",
+				"path", r.URL.Path,
+				"method", r.Method,
+				"error", err,
+			)
+			respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+			return
+		}
+
+		cfg.Logger.Error("failed to update user",
+			"path", r.URL.Path,
+			"method", r.Method,
+			"email", req.Email,
+			"error", err,
+		)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't update user")
 		return
 	}
 
-	params := database.UpdateUserPwdEmailParams{
-		ID:             userID,
-		Email:          req.Email,
-		HashedPassword: hashedPwd,
-		UpdatedAt:      time.Now().UTC(),
-	}
-
-	updatedUser, err := cfg.Db.UpdateUserPwdEmail(r.Context(), params)
-	if err != nil {
-		cfg.Logger.Error("failed to update user", "path", r.URL.Path, "method", r.Method, "user_id", userID, "error", err)
-		respondWithError(w, http.StatusInternalServerError, "Couldn't update user")
-	}
-
 	user := User{
-		ID:        updatedUser.ID,
-		CreatedAt: updatedUser.CreatedAt,
-		UpdatedAt: updatedUser.UpdatedAt,
-		Email:     updatedUser.Email,
-		Token:     jwtToken,
+		ID:        updatedUser.User.ID,
+		CreatedAt: updatedUser.User.CreatedAt,
+		UpdatedAt: updatedUser.User.UpdatedAt,
+		Email:     updatedUser.User.Email,
+		Token:     updatedUser.AccessToken,
 	}
 	respondWithJSON(w, http.StatusOK, user)
 }

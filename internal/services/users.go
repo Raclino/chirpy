@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -14,12 +13,15 @@ import (
 
 var oneHourExpiresInSec = 3600
 
-var ErrInvalidCredentials = errors.New("invalid credentials")
-
 type LoginResult struct {
 	User         database.User
 	AccessToken  string
 	RefreshToken string
+}
+
+type UpdateUserResult struct {
+	User        database.UpdateUserPwdEmailRow
+	AccessToken string
 }
 
 func (s *Service) CreateUser(ctx context.Context, email, password string) (database.CreateUserRow, error) {
@@ -86,5 +88,34 @@ func (s *Service) UserLogin(ctx context.Context, email, password string) (LoginR
 		User:         user,
 		AccessToken:  accessToken,
 		RefreshToken: createdRefreshToken,
+	}, nil
+}
+
+func (s *Service) UpdateUsers(ctx context.Context, jwtToken, email, password string) (UpdateUserResult, error) {
+	userID, err := auth.ValidateJWT(jwtToken, s.JWTSecret)
+	if err != nil {
+		return UpdateUserResult{}, ErrUnauthorized
+	}
+
+	hashedPwd, err := auth.HashPassword(password)
+	if err != nil {
+		return UpdateUserResult{}, fmt.Errorf("hash password: %w", err)
+	}
+
+	params := database.UpdateUserPwdEmailParams{
+		ID:             userID,
+		Email:          email,
+		HashedPassword: hashedPwd,
+		UpdatedAt:      time.Now().UTC(),
+	}
+
+	updatedUser, err := s.DB.UpdateUserPwdEmail(ctx, params)
+	if err != nil {
+		return UpdateUserResult{}, fmt.Errorf("update user: %w", err)
+	}
+
+	return UpdateUserResult{
+		User:        updatedUser,
+		AccessToken: jwtToken,
 	}, nil
 }
