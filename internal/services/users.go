@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Raclino/chirpy/internal/auth"
@@ -16,7 +17,7 @@ func (s *Service) CreateUser(ctx context.Context, email, password string) (datab
 
 	hashedPwd, err := auth.HashPassword(password)
 	if err != nil {
-		return database.CreateUserRow{}, err
+		return database.CreateUserRow{}, fmt.Errorf("hash password: %w", err)
 	}
 
 	params := database.CreateUserParams{
